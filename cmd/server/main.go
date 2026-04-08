@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/one2n-sre-bootcamp/student-api/internal/config"
+	"github.com/one2n-sre-bootcamp/student-api/internal/db"
 	"github.com/one2n-sre-bootcamp/student-api/pkg/logger"
 )
 
@@ -15,6 +16,10 @@ func main() {
 
 	// Load configuration
 	config.LoadConfig()
+
+	// Initialize Database connection only (no migrations)
+	db.InitDB()
+	defer db.CloseDB()
 
 	// Initialize Gin router
 	r := gin.Default()
