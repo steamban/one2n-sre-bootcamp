@@ -1,27 +1,34 @@
 CREATE TABLE IF NOT EXISTS students (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    first_name TEXT NOT NULL CHECK(length(first_name) <= 50),
-    last_name TEXT NOT NULL CHECK(length(last_name) <= 50),
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
     age INTEGER NOT NULL CHECK(age > 0 AND age < 150),
-    gender TEXT NOT NULL CHECK(gender IN ('Male', 'Female', 'Other')),
-    email TEXT NOT NULL UNIQUE CHECK(length(email) <= 255),
-    phone TEXT NOT NULL CHECK(length(phone) <= 15),
-    class TEXT NOT NULL CHECK(length(class) <= 20),
-    rank TEXT CHECK(length(rank) == 1 AND rank IN ('A', 'B', 'C', 'D', 'E', 'F')),
-    address_line1 TEXT NOT NULL CHECK(length(address_line1) <= 100),
-    address_line2 TEXT CHECK(length(address_line2) <= 100),
-    city TEXT NOT NULL CHECK(length(city) <= 50),
-    state TEXT NOT NULL CHECK(length(state) <= 50),
-    pincode TEXT NOT NULL CHECK(length(pincode) == 6),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted_at DATETIME
+    gender VARCHAR(10) NOT NULL CHECK(gender IN ('Male', 'Female', 'Other')),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(15) NOT NULL,
+    class VARCHAR(20) NOT NULL,
+    rank CHAR(1) CHECK(rank IN ('A', 'B', 'C', 'D', 'E', 'F')),
+    address_line1 VARCHAR(100) NOT NULL,
+    address_line2 VARCHAR(100),
+    city VARCHAR(50) NOT NULL,
+    state VARCHAR(50) NOT NULL,
+    pincode CHAR(6) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
--- Trigger to update updated_at on changes
-CREATE TRIGGER IF NOT EXISTS update_student_updated_at 
-AFTER UPDATE ON students
-FOR EACH ROW
+-- Function to update updated_at on changes
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
 BEGIN
-    UPDATE students SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id;
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
 END;
+$$ language 'plpgsql';
+
+-- Trigger to update updated_at on changes
+CREATE TRIGGER update_student_updated_at 
+    BEFORE UPDATE ON students
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
