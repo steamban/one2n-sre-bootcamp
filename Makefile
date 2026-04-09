@@ -58,7 +58,7 @@ migrate-new:
 	@if [ -z "$(name)" ]; then \
 		echo "Usage: make migrate-new name=your_migration_name"; \
 	else \
-		last_sim=$$(ls migrations/*.up.sql 2>/dev/null | sort | tail -n 1 | grep -oE '^[0-9]+' || echo 0); \
+		last_sim=$$(ls migrations/*.up.sql 2>/dev/null | sort | tail -n 1 | grep -oE '[0-9]+' | head -1 || echo 0); \
 		next_num=$$(printf "%06d" $$(($$last_sim + 1))); \
 		touch migrations/$${next_num}_$(name).up.sql; \
 		touch migrations/$${next_num}_$(name).down.sql; \
