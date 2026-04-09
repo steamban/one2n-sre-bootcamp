@@ -13,7 +13,7 @@ type Student struct {
 	Gender       string     `json:"gender" db:"gender" binding:"required,oneof=Male Female Other"`
 	Email        string     `json:"email" db:"email" binding:"required,email,max=255"`
 	Phone        string     `json:"phone" db:"phone" binding:"required,max=15"`
-	Class        string     `json:"class" db:"class" binding:"required,max=20"`
+	Class        string     `json:"class" db:"class" binding:"required,oneof=10th 11th 12th"`
 	Rank         *string    `json:"rank" db:"rank" binding:"len=1,oneof=A B C D E F"`
 	AddressLine1 string     `json:"address_line1" db:"address_line1" binding:"required,max=100"`
 	AddressLine2 string     `json:"address_line2" db:"address_line2" binding:"max=100"`
