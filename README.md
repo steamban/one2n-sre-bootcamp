@@ -1,11 +1,11 @@
 # Student CRUD REST API
 
 ## Purpose
-A simple REST API webserver for student management, built with Golang and the Gin framework. This project follows the Twelve-Factor App methodology and uses SQLite for data persistence.
+A simple REST API webserver for student management, built with Golang and the Gin framework. This project uses PostgreSQL for data persistence.
 
 ## Prerequisites
-- **Go 1.22+**:
-- **SQLite**: 
+- **Go 1.22+**
+- **PostgreSQL 14+**
 
 ### 1. Clone the repository
 ```bash
@@ -19,16 +19,25 @@ go mod tidy
 ```
 
 ### 3. Configure Environment Variables
-Copy the example environment file and adjust as needed:
+The application uses environment variables for configuration. Copy the example file to create your local `.env`:
 ```bash
-cp .env.example .env 
+cp example.env .env 
 ```
 
-Ensure your `.env` file contains:
-```env
-PORT=8080
-DATABASE_PATH=students.db
-```
+Edit the `.env` file to set necessary variables. Key variables include:
+- `PORT`: The port on which the API server will listen (e.g., `8080`).
+- `DB_HOST`: PostgreSQL database host (e.g., `localhost`).
+- `DB_PORT`: PostgreSQL database port (e.g., `5432`).
+- `DB_USER`: PostgreSQL database user.
+- `DB_PASSWORD`: PostgreSQL database password.
+- `DB_NAME`: PostgreSQL database name.
+- `DB_SSLMODE`: PostgreSQL SSL mode (e.g., `disable`).
+
+## Database Migrations
+Database schema changes are managed using `golang-migrate`. The migration files are located in the `migrations/` directory. You can apply or rollback migrations using the `make` commands:
+- `make migrate-up`: Applies all pending database migrations.
+- `make migrate-down`: Rolls back the last applied database migration.
+- `make migrate-new name=<name>`: Creates a new pair of migration files (up and down) for a new schema change. Replace `<name>` with a descriptive name for your migration.
 
 ## Running the Application
 
@@ -36,6 +45,20 @@ DATABASE_PATH=students.db
 ```bash
 go run cmd/server/main.go
 ```
+
+### Using Make Commands
+This project includes a `Makefile` to streamline common development tasks. Below are the available commands:
+
+- `make build`: Builds all application binaries (api server and migration tool).
+- `make run`: Builds and runs the API server.
+- `make dev`: Runs the API server directly using `go run` (useful for quick development cycles).
+- `make test`: Executes all Go tests in the project.
+- `make fmt`: Formats the Go source code.
+- `make vet`: Analyzes the Go source code for potential errors.
+- `make clean`: Removes all built binaries and artifacts.
+- `make migrate-new name=<name>`: Creates a new pair of migration files (up and down) with the given name.
+- `make migrate-up`: Applies all pending database migrations.
+- `make migrate-down`: Rolls back the last applied database migration.
 
 ## Verifying the Installation
 Once the server is running, you can test the healthcheck endpoint:
