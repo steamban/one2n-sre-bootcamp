@@ -35,8 +35,8 @@ const mockStudent = {
   city: "NYC",
   state: "NY",
   pincode: "123456",
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
+  createdAt: new Date(),
+  updatedAt: new Date(),
   deletedAt: null,
 };
 
