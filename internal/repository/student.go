@@ -12,7 +12,7 @@ import (
 // StudentRepository defines the interface for student data operations
 type StudentRepository interface {
 	CreateStudent(student *model.Student) error
-	GetStudents() ([]model.Student, error)
+	GetStudents(limit, offset int) ([]model.Student, int, error)
 	GetStudentByID(id int64) (*model.Student, error)
 	UpdateStudent(id int64, updates map[string]any) (*model.Student, error)
 	DeleteStudent(id int64) (*model.Student, error)
@@ -55,21 +55,29 @@ func (r *studentRepo) CreateStudent(student *model.Student) error {
 	return nil
 }
 
-// GetStudents retrieves all students from the database
-func (r *studentRepo) GetStudents() ([]model.Student, error) {
+// GetStudents retrieves students with pagination
+func (r *studentRepo) GetStudents(limit, offset int) ([]model.Student, int, error) {
+	var total int
+	countQuery := `SELECT COUNT(*) FROM students WHERE deleted_at IS NULL`
+	if err := r.db.QueryRow(countQuery).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	query := `
 		SELECT id, first_name, last_name, age, gender, email, phone, class, rank,
 		       address_line1, address_line2, city, state, pincode, created_at, updated_at
 		FROM students
-		WHERE deleted_at IS NULL`
+		WHERE deleted_at IS NULL
+		ORDER BY id
+		LIMIT $1 OFFSET $2`
 
-	rows, err := r.db.Query(query)
+	rows, err := r.db.Query(query, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
-	var students []model.Student
+	students := make([]model.Student, 0, limit)
 	for rows.Next() {
 		var s model.Student
 		err := rows.Scan(
@@ -77,16 +85,16 @@ func (r *studentRepo) GetStudents() ([]model.Student, error) {
 			&s.AddressLine1, &s.AddressLine2, &s.City, &s.State, &s.Pincode, &s.CreatedAt, &s.UpdatedAt,
 		)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		students = append(students, s)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return students, nil
+	return students, total, nil
 }
 
 // GetStudentByID retrieves a single student by ID

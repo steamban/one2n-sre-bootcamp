@@ -39,14 +39,32 @@ func (h *StudentHandler) CreateStudent(c *gin.Context) {
 
 // GetStudents handles the GET /api/v1/students request
 func (h *StudentHandler) GetStudents(c *gin.Context) {
-	students, err := h.repo.GetStudents()
+	limit, offset := 10, 0
+
+	if l := c.Query("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+	if o := c.Query("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+
+	students, total, err := h.repo.GetStudents(limit, offset)
 	if err != nil {
 		logger.Log.Error("failed to retrieve students", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve students"})
 		return
 	}
 
-	c.JSON(http.StatusOK, students)
+	c.JSON(http.StatusOK, gin.H{
+		"data":   students,
+		"total":  total,
+		"limit":  limit,
+		"offset": offset,
+	})
 }
 
 // GetStudentByID handles the GET /api/v1/students/:id request
