@@ -14,7 +14,7 @@ type StudentRepository interface {
 	CreateStudent(student *model.Student) error
 	GetStudents() ([]model.Student, error)
 	GetStudentByID(id int64) (*model.Student, error)
-	PatchStudent(id int64, updates map[string]interface{}) (int64, error)
+	UpdateStudent(id int64, updates map[string]any) (*model.Student, error)
 	DeleteStudent(id int64) (int64, error)
 }
 
@@ -112,10 +112,10 @@ func (r *studentRepo) GetStudentByID(id int64) (*model.Student, error) {
 	return &s, nil
 }
 
-// PatchStudent updates an existing student's information partially
-func (r *studentRepo) PatchStudent(id int64, updates map[string]interface{}) (int64, error) {
+// UpdateStudent updates an existing student's information partially
+func (r *studentRepo) UpdateStudent(id int64, updates map[string]any) (*model.Student, error) {
 	if len(updates) == 0 {
-		return 0, nil
+		return nil, nil
 	}
 
 	var setClauses []string
@@ -134,18 +134,27 @@ func (r *studentRepo) PatchStudent(id int64, updates map[string]interface{}) (in
 	argID++
 
 	query := fmt.Sprintf(
-		"UPDATE students SET %s WHERE id = $%d AND deleted_at IS NULL",
+		"UPDATE students SET %s WHERE id = $%d AND deleted_at IS NULL RETURNING id, first_name, last_name, age, gender, email, phone, class, rank, address_line1, address_line2, city, state, pincode, created_at, updated_at",
 		strings.Join(setClauses, ", "),
 		argID,
 	)
 	args = append(args, id)
 
-	result, err := r.db.Exec(query, args...)
+	row := r.db.QueryRow(query, args...)
+
+	var student model.Student
+	err := row.Scan(
+		&student.ID, &student.FirstName, &student.LastName, &student.Age,
+		&student.Gender, &student.Email, &student.Phone, &student.Class,
+		&student.Rank, &student.AddressLine1, &student.AddressLine2,
+		&student.City, &student.State, &student.Pincode,
+		&student.CreatedAt, &student.UpdatedAt,
+	)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return result.RowsAffected()
+	return &student, nil
 }
 
 // DeleteStudent performs a soft delete by setting the deleted_at timestamp

@@ -17,7 +17,7 @@ func SetupRouter(studentHandler *handler.StudentHandler) *gin.Engine {
 			students.POST("", studentHandler.CreateStudent)
 			students.GET("", studentHandler.GetStudents)
 			students.GET("/:id", studentHandler.GetStudentByID)
-			students.PATCH("/:id", studentHandler.PatchStudent)
+			students.PATCH("/:id", studentHandler.UpdateStudent)
 			students.DELETE("/:id", studentHandler.DeleteStudent)
 		}
 	}

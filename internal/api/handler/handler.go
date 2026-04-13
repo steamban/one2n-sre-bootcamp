@@ -73,7 +73,7 @@ func (h *StudentHandler) GetStudentByID(c *gin.Context) {
 }
 
 // PatchStudent handles the PATCH /api/v1/students/:id request
-func (h *StudentHandler) PatchStudent(c *gin.Context) {
+func (h *StudentHandler) UpdateStudent(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid student ID"})
@@ -97,19 +97,19 @@ func (h *StudentHandler) PatchStudent(c *gin.Context) {
 		return
 	}
 
-	rowsAffected, err := h.repo.PatchStudent(id, updates)
+	updatedStudent, err := h.repo.UpdateStudent(id, updates)
 	if err != nil {
 		logger.Log.Error("failed to patch student", "id", id, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update student"})
 		return
 	}
 
-	if rowsAffected == 0 {
+	if updatedStudent == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "student updated successfully"})
+	c.JSON(http.StatusOK, updatedStudent)
 }
 
 // DeleteStudent handles the DELETE /api/v1/students/:id request
