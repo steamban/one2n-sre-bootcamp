@@ -14,7 +14,7 @@ type StudentRepository interface {
 	CreateStudent(student *model.Student) error
 	GetStudents(limit, offset int) ([]model.Student, int, error)
 	GetStudentByID(id int64) (*model.Student, error)
-	UpdateStudent(id int64, updates map[string]any) (*model.Student, error)
+	UpdateStudent(id int64, updates model.UpdateStudent) (*model.Student, error)
 	DeleteStudent(id int64) (*model.Student, error)
 }
 
@@ -121,22 +121,81 @@ func (r *studentRepo) GetStudentByID(id int64) (*model.Student, error) {
 }
 
 // UpdateStudent updates an existing student's information partially
-func (r *studentRepo) UpdateStudent(id int64, updates map[string]any) (*model.Student, error) {
-	if len(updates) == 0 {
-		return nil, nil
-	}
-
+func (r *studentRepo) UpdateStudent(id int64, updates model.UpdateStudent) (*model.Student, error) {
 	var setClauses []string
-	var args []interface{}
+	var args []any
 	argID := 1
 
-	for column, value := range updates {
-		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", column, argID))
-		args = append(args, value)
+	if updates.FirstName != nil {
+		setClauses = append(setClauses, fmt.Sprintf("first_name = $%d", argID))
+		args = append(args, *updates.FirstName)
+		argID++
+	}
+	if updates.LastName != nil {
+		setClauses = append(setClauses, fmt.Sprintf("last_name = $%d", argID))
+		args = append(args, *updates.LastName)
+		argID++
+	}
+	if updates.Age != nil {
+		setClauses = append(setClauses, fmt.Sprintf("age = $%d", argID))
+		args = append(args, *updates.Age)
+		argID++
+	}
+	if updates.Gender != nil {
+		setClauses = append(setClauses, fmt.Sprintf("gender = $%d", argID))
+		args = append(args, *updates.Gender)
+		argID++
+	}
+	if updates.Email != nil {
+		setClauses = append(setClauses, fmt.Sprintf("email = $%d", argID))
+		args = append(args, *updates.Email)
+		argID++
+	}
+	if updates.Phone != nil {
+		setClauses = append(setClauses, fmt.Sprintf("phone = $%d", argID))
+		args = append(args, *updates.Phone)
+		argID++
+	}
+	if updates.Class != nil {
+		setClauses = append(setClauses, fmt.Sprintf("class = $%d", argID))
+		args = append(args, *updates.Class)
+		argID++
+	}
+	if updates.Rank != nil {
+		setClauses = append(setClauses, fmt.Sprintf("rank = $%d", argID))
+		args = append(args, *updates.Rank)
+		argID++
+	}
+	if updates.AddressLine1 != nil {
+		setClauses = append(setClauses, fmt.Sprintf("address_line1 = $%d", argID))
+		args = append(args, *updates.AddressLine1)
+		argID++
+	}
+	if updates.AddressLine2 != nil {
+		setClauses = append(setClauses, fmt.Sprintf("address_line2 = $%d", argID))
+		args = append(args, *updates.AddressLine2)
+		argID++
+	}
+	if updates.City != nil {
+		setClauses = append(setClauses, fmt.Sprintf("city = $%d", argID))
+		args = append(args, *updates.City)
+		argID++
+	}
+	if updates.State != nil {
+		setClauses = append(setClauses, fmt.Sprintf("state = $%d", argID))
+		args = append(args, *updates.State)
+		argID++
+	}
+	if updates.Pincode != nil {
+		setClauses = append(setClauses, fmt.Sprintf("pincode = $%d", argID))
+		args = append(args, *updates.Pincode)
 		argID++
 	}
 
-	// Always update updated_at
+	if len(setClauses) == 0 {
+		return nil, nil
+	}
+
 	setClauses = append(setClauses, fmt.Sprintf("updated_at = $%d", argID))
 	args = append(args, time.Now())
 	argID++

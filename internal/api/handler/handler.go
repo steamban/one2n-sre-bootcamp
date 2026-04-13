@@ -98,20 +98,9 @@ func (h *StudentHandler) UpdateStudent(c *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
+	var updates model.UpdateStudent
 	if err := c.ShouldBindJSON(&updates); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Remove fields that should not be updated manually
-	delete(updates, "id")
-	delete(updates, "created_at")
-	delete(updates, "updated_at")
-	delete(updates, "deleted_at")
-
-	if len(updates) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
 		return
 	}
 
