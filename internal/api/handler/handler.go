@@ -120,17 +120,17 @@ func (h *StudentHandler) DeleteStudent(c *gin.Context) {
 		return
 	}
 
-	rowsAffected, err := h.repo.DeleteStudent(id)
+	deletedStudent, err := h.repo.DeleteStudent(id)
 	if err != nil {
 		logger.Log.Error("failed to delete student", "id", id, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete student"})
 		return
 	}
 
-	if rowsAffected == 0 {
+	if deletedStudent == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "student not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "student deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "student deleted successfully", "data": deletedStudent})
 }

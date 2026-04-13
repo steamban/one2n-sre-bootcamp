@@ -15,7 +15,7 @@ type StudentRepository interface {
 	GetStudents() ([]model.Student, error)
 	GetStudentByID(id int64) (*model.Student, error)
 	UpdateStudent(id int64, updates map[string]any) (*model.Student, error)
-	DeleteStudent(id int64) (int64, error)
+	DeleteStudent(id int64) (*model.Student, error)
 }
 
 // studentRepo implements StudentRepository
@@ -158,12 +158,24 @@ func (r *studentRepo) UpdateStudent(id int64, updates map[string]any) (*model.St
 }
 
 // DeleteStudent performs a soft delete by setting the deleted_at timestamp
-func (r *studentRepo) DeleteStudent(id int64) (int64, error) {
-	query := `UPDATE students SET deleted_at = $1 WHERE id = $2 AND deleted_at IS NULL`
-	result, err := r.db.Exec(query, time.Now(), id)
+func (r *studentRepo) DeleteStudent(id int64) (*model.Student, error) {
+	query := `
+		UPDATE students SET deleted_at = $1 WHERE id = $2 AND deleted_at IS NULL 
+		RETURNING id, first_name, last_name, age, gender, email, phone, class, rank, address_line1, address_line2, city, state, pincode, created_at, updated_at, deleted_at`
+
+	row := r.db.QueryRow(query, time.Now(), id)
+
+	var student model.Student
+	err := row.Scan(
+		&student.ID, &student.FirstName, &student.LastName, &student.Age,
+		&student.Gender, &student.Email, &student.Phone, &student.Class,
+		&student.Rank, &student.AddressLine1, &student.AddressLine2,
+		&student.City, &student.State, &student.Pincode,
+		&student.CreatedAt, &student.UpdatedAt, &student.DeletedAt,
+	)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return result.RowsAffected()
+	return &student, nil
 }
