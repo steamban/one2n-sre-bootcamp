@@ -118,3 +118,13 @@ docker-run:
 
 docker-app-stop:
 	docker stop student-api && docker rm student-api
+
+docker-compose-up: docker-build
+	docker compose up
+
+docker-compose-down:
+	docker compose down
+
+docker-clean:
+	docker compose down -v
+	docker rmi $$(docker images "student-api" -q)
