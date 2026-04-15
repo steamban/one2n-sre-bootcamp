@@ -1,10 +1,11 @@
-.PHONY: all build run test clean fmt vet help migrate-new migrate-up migrate-down dev
+.PHONY: all build run test clean fmt vet help migrate-new migrate-up migrate-down dev docker-build docker-pg-start docker-pg-stop docker-migrate docker-run docker-app-stop
 
 APP_NAME=student-api
 MIGRATE_NAME=student-migrate
 BINARY_DIR=bin
 SERVER_MAIN=cmd/server/main.go
 MIGRATE_MAIN=cmd/migrate/main.go
+VERSION?=0.1.0
 
 # Default target
 all: build
@@ -14,7 +15,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  build              Build all binaries"
-	@echo "  run                Run the API server"	
+	@echo "  run                Run the API server"
 	@echo "  dev                Run the API server with go run"
 	@echo "  test               Run all tests"
 	@echo "  fmt                Format the source code"
@@ -23,6 +24,12 @@ help:
 	@echo "  migrate-new name=<n> Create a new migration file"
 	@echo "  migrate-up         Apply all pending migrations"
 	@echo "  migrate-down       Rollback the last migration"
+	@echo "  docker-build       Build Docker image (requires VERSION=x.y.z)"
+	@echo "  docker-pg-start    Start Postgres container"
+	@echo "  docker-pg-stop     Stop and remove Postgres container"
+	@echo "  docker-migrate     Run migrations (requires docker-pg-start)"
+	@echo "  docker-run         Run API container (requires docker-pg-start)"
+	@echo "  docker-app-stop    Stop and remove API container"
 
 build:
 	@echo "Building binaries..."
@@ -72,3 +79,42 @@ migrate-up: build
 migrate-down: build
 	@echo "Running migrations down..."
 	./$(BINARY_DIR)/$(MIGRATE_NAME) down
+
+docker-build:
+	docker build -t student-api:$(VERSION) .
+
+docker-pg-start:
+	docker run -d --name student-postgres \
+		-e POSTGRES_USER=postgres \
+		-e POSTGRES_PASSWORD=secret \
+		-e POSTGRES_DB=students \
+		-v student-pgdata:/var/lib/postgresql/data \
+		-p 5433:5432 \
+		postgres:16-alpine
+
+docker-pg-stop:
+	docker stop student-postgres && docker rm student-postgres
+
+docker-migrate: 
+	docker run --rm \
+		-e DB_HOST=host.docker.internal \
+		-e DB_PORT=5433 \
+		-e DB_USER=postgres \
+		-e DB_PASSWORD=secret \
+		-e DB_NAME=students \
+		-e DB_SSLMODE=disable \
+		student-api:$(VERSION) ./migrate up
+
+docker-run: 
+	docker run \
+		-e DB_HOST=host.docker.internal \
+		-e DB_PORT=5433 \
+		-e DB_USER=postgres \
+		-e DB_PASSWORD=secret \
+		-e DB_NAME=students \
+		-e DB_SSLMODE=disable \
+		-p 8080:8080 \
+		student-api:$(VERSION)
+
+docker-app-stop:
+	docker stop student-api && docker rm student-api

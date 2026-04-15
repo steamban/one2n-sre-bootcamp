@@ -1,0 +1,11 @@
+.git
+.gitignore
+*.md
+.env
+bin/
+migrations/*.down.sql
+Dockerfile
+docker-compose.yml
+.dockerignore
+Makefile
+postman/

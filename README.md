@@ -6,6 +6,7 @@ A simple REST API webserver for student management, built with Golang and the Gi
 ## Prerequisites
 - **Go 1.22+**
 - **PostgreSQL 14+**
+- **Docker** (for containerized setup)
 
 ### 1. Clone the repository
 ```bash
@@ -59,6 +60,21 @@ This project includes a `Makefile` to streamline common development tasks. Below
 - `make migrate-new name=<name>`: Creates a new pair of migration files (up and down) with the given name.
 - `make migrate-up`: Applies all pending database migrations.
 - `make migrate-down`: Rolls back the last applied database migration.
+
+### Using Docker
+Start the database and run the application in containers:
+```bash
+make docker-build      # Create the app container image
+make docker-pg-start   # Start PostgreSQL container
+make docker-migrate    # Run database migrations
+make docker-run        # Start the API container
+```
+
+Stop the containers:
+```bash
+make docker-app-stop   # Stop API container
+make docker-pg-stop     # Stop and remove PostgreSQL container
+```
 
 ## Verifying the Installation
 Once the server is running, you can test the healthcheck endpoint:
