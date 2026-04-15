@@ -1,5 +1,6 @@
 # Stage 1: Build
-FROM golang:1.26-alpine AS builder
+# Pinned to golang:1.26-alpine
+FROM golang:sha256:c2a1f7b2095d046ae14b286b18413a05bb82c9bca9b25fe7ff5efef0f0826166 AS builder
 
 WORKDIR /build
 
@@ -11,20 +12,19 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o api cmd/server/main.go
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o migrate cmd/migrate/main.go
 
 # Stage 2: Runtime
-FROM alpine:3.19
+# Pinned to alpine:3.19
+FROM alpine:sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1
 
-RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -s /bin/sh -D appuser
+RUN addgroup appgroup && adduser -G appgroup -s /bin/sh -D appuser
 
 WORKDIR /app
 
-COPY --from=builder /build/api .
-COPY --from=builder /build/migrate .
-COPY --from=builder /build/migrations ./migrations
-
-RUN chown -R appuser:appgroup /app
+COPY --from=builder --chown=appuser:appgroup /build/api .
+COPY --from=builder --chown=appuser:appgroup /build/migrate .
+COPY --from=builder --chown=appuser:appgroup /build/migrations ./migrations
 
 USER appuser
 
 EXPOSE 8080
 
-CMD ["./api"]
+CMD ["./api"]   
