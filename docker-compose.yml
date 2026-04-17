@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine@sha256:93d55776e04376e19adb2733e3ccebb4392ee7dd86d8ff238503b30fe719c84f
     environment:
-      POSTGRES_USER: ${DB_USER:-student}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
-      POSTGRES_DB: ${DB_NAME:-student_db}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -25,13 +25,7 @@ services:
         condition: service_healthy
     entrypoint: ["./migrate"]
     command: ["up"]
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-student}
-      DB_PASSWORD: ${DB_PASSWORD:-secret}
-      DB_NAME: ${DB_NAME:-student_db}
-      DB_SSLMODE: ${DB_SSLMODE:-disable}
+    env_file: ".env"
     restart: "no"
 
   api:
@@ -46,13 +40,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-student}
-      DB_PASSWORD: ${DB_PASSWORD:-secret}
-      DB_NAME: ${DB_NAME:-student_db}
-      DB_SSLMODE: ${DB_SSLMODE:-disable}
+    env_file: ".env"
     depends_on:
       migrations:
         condition: service_completed_successfully
