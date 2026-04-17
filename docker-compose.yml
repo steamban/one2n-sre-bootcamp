@@ -35,7 +35,7 @@ services:
     ports:
       - "${PORT}:${PORT}"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthcheck || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:$$PORT/healthcheck || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
