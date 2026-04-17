@@ -33,7 +33,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${API_PORT:-8080}:8080"
+      - "${PORT}:${PORT}"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthcheck || exit 1"]
       interval: 10s
