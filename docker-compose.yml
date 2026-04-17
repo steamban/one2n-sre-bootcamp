@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:93d55776e04376e19adb2733e3ccebb4392ee7dd86d8ff238503b30fe719c84f
     environment:
       POSTGRES_USER: ${DB_USER:-student}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
