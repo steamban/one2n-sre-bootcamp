@@ -76,6 +76,14 @@ make docker-app-stop   # Stop API container
 make docker-pg-stop     # Stop and remove PostgreSQL container
 ```
 
+### Using Docker Compose
+Docker Compose commands are also available as Make targets for convenience:
+```bash
+make docker-compose-up      # Start all services (builds if needed)
+make docker-compose-down    # Stop and remove containers
+make docker-compose-clean   # Stop and remove containers with volumes
+```
+
 ## Verifying the Installation
 Once the server is running, you can test the healthcheck endpoint:
 ```bash
