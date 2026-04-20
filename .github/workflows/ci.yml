@@ -58,7 +58,6 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: [self-hosted, linux, ARM64]
-    needs: [build]
     continue-on-error: false
     steps:
       - uses: actions/checkout@v6
