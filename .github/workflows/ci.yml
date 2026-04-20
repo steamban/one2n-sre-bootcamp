@@ -1,20 +1,6 @@
 name: CI Pipeline
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'cmd/**'
-      - 'internal/**'
-      - 'pkg/**'
-      - 'migrations/**'
-      - 'go.mod'
-      - 'go.sum'
-      - 'Makefile'
-      - 'Dockerfile'
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 permissions:
   contents: read
