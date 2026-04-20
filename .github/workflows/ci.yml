@@ -8,6 +8,7 @@ concurrency:
 
 permissions:
   contents: read
+  security-events: read
 
 jobs:
   lint:
@@ -60,7 +61,7 @@ jobs:
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@2026.1
           staticcheck ./...
-          
+
       - name: Run Trivy vulnerability scanner in repo mode
         uses: aquasecurity/trivy-action@0.35.0
         with:
