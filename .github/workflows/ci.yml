@@ -10,28 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build
-    runs-on: [self-hosted, linux, ARM64]
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version: '1.26'
-      - name: Build API
-        run: make build
-
-  test:
-    name: Test
-    runs-on: [self-hosted, linux, ARM64]
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version: '1.26'
-      - name: Run Tests
-        run: make test
-
   lint:
     name: Lint
     runs-on: [self-hosted, linux, ARM64]
@@ -45,10 +23,34 @@ jobs:
           make fmt
           make vet
 
+  build:
+    name: Build
+    needs: [lint]
+    runs-on: [self-hosted, linux, ARM64]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+      - name: Build API
+        run: make build
+
+  test:
+    name: Test
+    needs: [lint]
+    runs-on: [self-hosted, linux, ARM64]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+      - name: Run Tests
+        run: make test
+
   security-scan:
     name: Security Scan
+    needs: [lint]
     runs-on: [self-hosted, linux, ARM64]
-    continue-on-error: false
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
