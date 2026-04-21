@@ -48,19 +48,6 @@ jobs:
           make fmt
           make vet
 
-  build:
-    name: Build
-    needs: [lint]
-    runs-on: [self-hosted, linux, ARM64]
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: Build API
-        run: make build
-
   test:
     name: Test
     needs: [lint]
@@ -76,7 +63,7 @@ jobs:
 
   docker:
     name: Docker Build and Push
-    needs: [build, test]
+    needs: [test]
     runs-on: [self-hosted, linux, ARM64]
     if: github.event_name != 'workflow_dispatch' || github.ref_name != 'main'
     steps:
