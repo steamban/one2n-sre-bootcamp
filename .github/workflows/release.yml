@@ -5,6 +5,8 @@ on:
     branches: [main]
     tags:
       - 'release'
+  release:
+    types: [published]
 
 permissions:
   contents: write
