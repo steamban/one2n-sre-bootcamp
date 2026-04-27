@@ -19,7 +19,7 @@ help:
 	@echo "  ps              Show running containers"
 
 deploy:
-	docker-compose -f $(COMPOSE_FILE) up
+	docker-compose -f $(COMPOSE_FILE) up -d
 	@echo "Services started. API available at http://localhost:8080"
 
 deploy-stop:
