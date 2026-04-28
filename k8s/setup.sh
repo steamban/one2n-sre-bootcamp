@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-echo "🎡 Spinning up a 3-node Minikube cluster..."
-minikube start --nodes 3
+echo "🎡 Spinning up a 4-node Minikube cluster..."
+minikube start --nodes 4
 
 echo "⏳ Waiting for nodes to be ready..."
 kubectl wait --for=condition=ready nodes --all --timeout=120s
@@ -10,11 +10,14 @@ kubectl wait --for=condition=ready nodes --all --timeout=120s
 # Get node names dynamically
 NODES=($(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'))
 
-echo "🏷️  Applying node labels..."
-# Node A -> application | Node B -> database | Node C -> dependent_services
-kubectl label node ${NODES[0]} type=application --overwrite
-kubectl label node ${NODES[1]} type=database --overwrite
-kubectl label node ${NODES[2]} type=dependent_services --overwrite
+echo "🚫 Tainting the control plane..."
+kubectl taint nodes ${NODES[0]} node-role.kubernetes.io/control-plane:NoSchedule --overwrite
+
+echo "🏷️  Applying node labels to worker nodes..."
+# Node 1 -> application | Node 2 -> database | Node 3 -> dependent_services
+kubectl label node ${NODES[1]} type=application --overwrite
+kubectl label node ${NODES[2]} type=database --overwrite
+kubectl label node ${NODES[3]} type=dependent_services --overwrite
 
 echo "⚙️  Installing External Secrets CRDs..."
 kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml --server-side
