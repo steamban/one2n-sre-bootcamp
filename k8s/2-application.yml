@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-api
+  namespace: student-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: student-api
+  template:
+    metadata:
+      labels:
+        app: student-api
+    spec:
+      nodeSelector:
+        type: application # Forces App onto Node A
+      initContainers:
+        - name: wait-db
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z postgres 5432; do sleep 2; done']
+        - name: migrate
+          image: arvind12n/student-api:latest
+          command: ["./migrate", "up"]
+          envFrom:
+            - configMapRef: { name: student-config }
+            - secretRef: { name: student-api-db-creds }
+      containers:
+        - name: student-api
+          image: arvind12n/student-api:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef: { name: student-config }
+            - secretRef: { name: student-api-db-creds }
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: student-api
+  namespace: student-api
+spec:
+  selector:
+    app: student-api
+  ports:
+    - port: 8080
