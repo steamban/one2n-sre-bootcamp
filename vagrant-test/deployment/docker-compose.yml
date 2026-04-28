@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:93d55776e04376e19adb2733e3ccebb4392ee7dd86d8ff238503b30fe719c84f
+    environment:
+      POSTGRES_USER: ${DB_USER:-student}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_DB: ${DB_NAME:-student_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  migrations:
+    image: arvind12n/student-api:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["./migrate"]
+    command: ["up"]
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-student}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DB_NAME: ${DB_NAME:-student_db}
+      DB_SSLMODE: disable
+    restart: "no"
+
+  api1:
+    image: arvind12n/student-api:latest
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-student}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DB_NAME: ${DB_NAME:-student_db}
+      DB_SSLMODE: disable
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  api2:
+    image: arvind12n/student-api:latest
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-student}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      DB_NAME: ${DB_NAME:-student_db}
+      DB_SSLMODE: disable
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  nginx:
+    image: nginx@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api1
+      - api2
+    restart: unless-stopped
+
+volumes:
+  pgdata:

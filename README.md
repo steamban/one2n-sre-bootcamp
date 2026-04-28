@@ -91,6 +91,83 @@ curl -i http://localhost:8080/healthcheck
 ```
 You should receive a `200 OK` response with `{"status":"UP"}`.
 
+## Vagrant Setup (Local Development with UTM)
+
+This project includes a Vagrant configuration for running the full stack locally using UTM on Mac.
+
+### Prerequisites
+- **UTM** (or another VM hypervisor that supports Ubuntu)
+- **~4GB RAM** allocated to the VM
+- **2-4 CPU cores** allocated to the VM
+
+### Installing Required Software
+
+If you don't have these installed, run the following commands:
+
+### Install UTM
+```bash
+brew install --cask utm
+```
+
+### Install Vagrant
+```bash
+brew tap hashicorp/tap
+brew install hashicorp/tap/hashicorp-vagrant
+```
+
+### Install Vagrant UTM Plugin
+```bash
+vagrant plugin install vagrant_utm
+```
+
+### Getting Started
+
+1. **Navigate to the vagrant directory:**
+   ```bash
+   cd vagrant-test
+   ```
+
+2. **Start the VM:**
+   ```bash
+   vagrant up
+   ```
+
+3. **SSH into the VM:**
+   ```bash
+   vagrant ssh
+   ```
+
+4. **Start the application stack:**
+   ```bash
+   cd /vagrant
+   make deploy
+   ```
+
+5. **Access the application:**
+   - **API (via nginx load balancer)**: `http://localhost:8080`
+   - **Healthcheck**: `http://localhost:8080/healthcheck`
+
+
+### Stopping the Stack
+
+```bash
+cd deployment
+make deploy-stop
+```
+
+To stop and remove the VM:
+
+```bash
+vagrant halt        # Stop the VM (preserve data)
+vagrant destroy      # Destroy the VM (remove all data)
+```
+
+### Troubleshooting
+
+- **VM not starting**: Ensure UTM/vagrant is properly installed and virtualization is enabled
+- **Port conflicts**: Ensure nothing else is running on port 8080
+- **Database connection issues**: Check that postgres container is healthy with `docker compose ps`
+
 ## Project Structure
 - `cmd/server/`: Entry point for the application.
 - `internal/`: Private application and library code.
