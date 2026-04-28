@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0](https://github.com/steamban/one2n-sre-bootcamp/compare/v1.0.0...v1.1.0) (2026-04-28)
+
+
+### Features
+
+* **vagrant:** add docker compose and Makefile ([0595b41](https://github.com/steamban/one2n-sre-bootcamp/commit/0595b416f7b2800a630c20c6bd4155347bb48017))
+* **vagrant:** add nginx config file ([e88927c](https://github.com/steamban/one2n-sre-bootcamp/commit/e88927c14306f8f63217032af7a9c55d8a3b79b8))
+* **vagrant:** add Vagrantfile and provisioner script ([b1615de](https://github.com/steamban/one2n-sre-bootcamp/commit/b1615de13dabb596eb4dd456bfb37ef2981185ba))
+
+
+### Bug Fixes
+
+* **ci:** use direct docker command for hadolint to bypass runner issue ([71df7c6](https://github.com/steamban/one2n-sre-bootcamp/commit/71df7c6905cc5bf7e773d71486d2903a19ebab85))
+* **vagrant:** add missing detached mode to docker compose target ([48acf15](https://github.com/steamban/one2n-sre-bootcamp/commit/48acf15714d4026d5023865275df43fbc65760d5))
+* **vagrant:** pin digest to docker compose images ([346ae2b](https://github.com/steamban/one2n-sre-bootcamp/commit/346ae2b8bc643217a68f476ddbfa81f4a1f8d879))
+* **vagrant:** remove unwanted ports ([d0af4f0](https://github.com/steamban/one2n-sre-bootcamp/commit/d0af4f01552b5635833665d814a046328a9c01dc))
+
 ## 1.0.0 (2026-04-22)
 
 
