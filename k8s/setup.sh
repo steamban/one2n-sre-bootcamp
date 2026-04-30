@@ -4,6 +4,9 @@ set -e
 echo "🎡 Spinning up a 4-node Minikube cluster..."
 minikube start --nodes 4
 
+echo "⚙️ Enabling Rancher storage provisioner..."
+minikube addons enable storage-provisioner-rancher
+
 echo "⏳ Waiting for nodes to be ready..."
 kubectl wait --for=condition=ready nodes --all --timeout=120s
 
