@@ -11,13 +11,25 @@ kubectl wait --for=condition=ready nodes --all --timeout=120s
 NODES=($(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'))
 
 echo "🚫 Tainting the control plane..."
-kubectl taint nodes ${NODES[0]} node-role.kubernetes.io/control-plane:NoSchedule --overwrite
+kubectl taint nodes $(kubectl get nodes -l node-role.kubernetes.io/control-plane -o jsonpath='{.items[0].metadata.name}') node-role.kubernetes.io/control-plane:NoSchedule --overwrite
+
+echo "⏳ Ensuring control-plane label exists..."
+until kubectl get nodes -l node-role.kubernetes.io/control-plane | grep -q .; do
+  sleep 2
+done
 
 echo "🏷️  Applying node labels to worker nodes..."
-# Node 1 -> application | Node 2 -> database | Node 3 -> dependent_services
-kubectl label node ${NODES[1]} type=application --overwrite
-kubectl label node ${NODES[2]} type=database --overwrite
-kubectl label node ${NODES[3]} type=dependent_services --overwrite
+WORKER_NODES=($(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' \
+  -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | sort))
+
+if [ ${#WORKER_NODES[@]} -ge 3 ]; then
+  kubectl label nodes ${WORKER_NODES[0]} type=application --overwrite
+  kubectl label nodes ${WORKER_NODES[1]} type=database --overwrite
+  kubectl label nodes ${WORKER_NODES[2]} type=dependent_services --overwrite
+else
+  echo "❌ Error: Expected at least 3 worker nodes, found ${#WORKER_NODES[@]}"
+  exit 1
+fi
 
 echo "⚙️  Installing External Secrets CRDs..."
 kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml --server-side
