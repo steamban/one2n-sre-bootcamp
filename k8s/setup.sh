@@ -22,6 +22,10 @@ kubectl label node ${NODES[3]} type=dependent_services --overwrite
 echo "⚙️  Installing External Secrets CRDs..."
 kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/crds/bundle.yaml --server-side
 
+# Wait for CRDs to be established
+echo "⏳ Waiting for External Secrets CRDs to be established..."
+kubectl wait --for=condition=Established crd/externalsecrets.external-secrets.io --timeout=60s
+
 echo "🚀 Starting One-Click Deployment..."
 
 # 1. Create Namespaces
