@@ -1,0 +1,68 @@
+releases:
+  - name: vault
+    namespace: vault
+    chart: hashicorp/vault
+    version: 0.32.0
+    wait: true
+    labels:
+      tier: infra
+    values:
+      - server:
+          dev:
+            enabled: true
+            devRootToken: "root"
+          devDevRootToken: "root"
+    hooks:
+      - events: ["postsync"]      # Changed from ["postinstall", "postupgrade"]
+        showlogs: true
+        command: /bin/sh
+        args:
+          - -c
+          - |
+            echo "Waiting for Vault pod to be ready..."
+            kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=vault -n vault --timeout=120s
+            
+            echo "Cleaning up any previous seeder jobs..."
+            kubectl delete job vault-seeder -n vault --ignore-not-found
+            
+            echo "Seeding Vault..."
+            kubectl apply -f secrets/vault-seeder-job.yaml --namespace=vault
+            kubectl wait --for=condition=complete job/vault-seeder -n vault --timeout=60s
+
+  - name: eso
+    namespace: external-secrets
+    chart: external-secrets/external-secrets
+    version: 2.4.0
+    wait: true
+    labels:
+      tier: infra
+    needs:
+      - vault/vault
+    values:
+      - installCRDs: true
+    hooks:
+      - events: ["postsync"]      # Changed from ["postinstall", "postupgrade"]
+        showlogs: true
+        command: /bin/sh
+        args:
+          - -c
+          - |
+            echo "Waiting for ESO CRDs to register..."
+            kubectl wait --for condition=established --timeout=60s crd/clustersecretstores.external-secrets.io
+            
+            echo "Applying Vault Backend configuration..."
+            kubectl apply -f secrets/vault-backend.yaml
+
+  - name: student-api
+    namespace: student-api
+    chart: ./student-api
+    # disableValidation: true
+    # atomic: true         
+    # cleanupOnFail: true  
+    timeout: 300
+    labels:
+      tier: app
+    needs:
+      - external-secrets/eso
+    values:
+      - student-api/values.yaml

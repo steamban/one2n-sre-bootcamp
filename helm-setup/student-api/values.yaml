@@ -1,0 +1,45 @@
+image:
+  repository: arvind12n/student-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+configMap:
+  PORT: "8080"
+  DB_HOST: "student-api-postgresql"
+  DB_PORT: "5432"
+  DB_SSLMODE: "disable"
+
+nodeSelector:
+  type: application
+
+resources: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+postgresql:
+  enabled: true
+  auth:
+    username: postgres # Reverted to match the Vault seeder data
+    existingSecret: student-api-db-creds
+    secretKeys:
+      adminPasswordKey: POSTGRES_PASSWORD # The correct Bitnami override for the admin user
+    database: student_db
+  primary:
+    # Your PVC retention policy is perfect here!
+    persistentVolumeClaimRetentionPolicy: 
+      enabled: true
+      whenDeleted: Delete
+      whenScaled: Retain
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: local-path
+    nodeSelector:
+      type: database
+    service:
+      ports:
+        postgresql: 5432
+  primaryLabels:
+    type: database
