@@ -1,0 +1,25 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about your deployment:
+
+    kubectl get all -n {{ .Release.Namespace }}
+
+To check the status of your pods:
+
+    kubectl get pods -n {{ .Release.Namespace }}
+
+To port-forward to the student-api service:
+
+    kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "student-api.fullname" . }} 8080:8080
+
+The application will be available at http://localhost:8080
+
+NOTE: The ExternalSecret syncs credentials from Vault. If the secret is not created immediately,
+wait a moment for ESO to process the ExternalSecret resource.
+
+To view ESO sync status:
+
+    kubectl get externalsecret -n {{ .Release.Namespace }}
+    kubectl describe externalsecret student-api-db-creds -n {{ .Release.Namespace }}

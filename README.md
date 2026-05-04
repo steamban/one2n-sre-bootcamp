@@ -168,8 +168,78 @@ vagrant destroy      # Destroy the VM (remove all data)
 - **Port conflicts**: Ensure nothing else is running on port 8080
 - **Database connection issues**: Check that postgres container is healthy with `docker compose ps`
 
+## Helm Setup (Kubernetes Deployment)
+
+This project includes a Helm chart for deploying the Student API to Kubernetes along with its infrastructure dependencies (PostgreSQL, Vault, and External Secrets Operator).
+
+### Prerequisites
+- **Kubernetes cluster** (e.g., kind, minikube, or a cloud-based cluster)
+- **Helm 3+**
+- **kubectl** configured to access your cluster
+- **helmfile** (optional, for declarative deployments)
+
+For setting up a local minikube cluster, you can use the provided `infra.sh` script:
+```bash
+cd helm-setup
+./infra.sh
+```
+
+### Infrastructure Components
+
+The helmfile deploys three main components:
+1. **Vault** - For secrets management (runs in `vault` namespace)
+2. **External Secrets Operator (ESO)** - For syncing secrets from Vault to Kubernetes (runs in `external-secrets` namespace)
+3. **Student API** - The application with PostgreSQL as a dependency (runs in `student-api` namespace)
+
+### Deploying with Helmfile
+
+1. **Navigate to the helm setup directory:**
+   ```bash
+   cd helm-setup
+   ```
+
+2. **Deploy infra components:**
+   ```bash
+   helmfile apply --selector tier=infra
+   ```
+
+3. **Deploy app component:**
+   ```bash
+   helmfile apply --selector tier=app
+   ```
+
+4. **Verify the deployment:**
+   ```bash
+   kubectl get pods -n student-api
+   kubectl get pods -n vault
+   kubectl get pods -n external-secrets
+   ```
+
+### Accessing the Application
+
+Once deployed, port-forward to access locally:
+```bash
+kubectl port-forward svc/student-api-student-api 8080:8080 -n student-api
+```
+
+### Verifying the Installation
+
+Check the healthcheck endpoint:
+```bash
+curl http://localhost:8080/healthcheck
+```
+
+### Cleanup
+
+To uninstall all resources:
+```bash
+helmfile destroy
+```
+
+
 ## Project Structure
 - `cmd/server/`: Entry point for the application.
 - `internal/`: Private application and library code.
 - `pkg/`: Public library code.
 - `migrations/`: SQL migration files.
+- `helm-setup/`: Run application with helm
