@@ -27,7 +27,7 @@ spec:
           args:
             - |
               echo "Waiting for Vault to be ready..."
-              until vault status 2>/dev/null | grep -q "Key Value"; do sleep 2; done
+              until vault status 2>/dev/null | grep -q "Initialized.*true"; do sleep 2; done
               vault kv put secret/student-api/db username='postgres' password='supersecretpassword' dbname='student_db'
               echo "Vault seeded successfully!"
           resources:
