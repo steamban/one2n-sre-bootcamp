@@ -7,6 +7,7 @@ repositories:
 releases:
   - name: vault
     namespace: vault
+    createNamespace: true
     chart: hashicorp/vault
     version: 0.32.0
     wait: true
@@ -37,6 +38,7 @@ releases:
 
   - name: eso
     namespace: external-secrets
+    createNamespace: true
     chart: external-secrets/external-secrets
     version: 2.4.0
     wait: true
@@ -61,6 +63,7 @@ releases:
 
   - name: student-api
     namespace: student-api
+    createNamespace: true
     chart: ./student-api
     # disableValidation: true
     # atomic: true         
