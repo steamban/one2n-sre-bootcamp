@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: student-config
+  namespace: student-api
+data:
+  PORT: "8080"
+  DB_HOST: "postgres"
+  DB_PORT: "5432"
+  DB_SSLMODE: "disable"

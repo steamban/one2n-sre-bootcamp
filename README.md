@@ -168,8 +168,51 @@ vagrant destroy      # Destroy the VM (remove all data)
 - **Port conflicts**: Ensure nothing else is running on port 8080
 - **Database connection issues**: Check that postgres container is healthy with `docker compose ps`
 
+## Using Kubernetes
+
+This project includes Kubernetes manifests in the `k8s/` directory for deploying the full stack (Postgres, Vault, External Secrets, and Student API).
+
+### Prerequisites
+- **Minikube** (for local Kubernetes)
+- **kubectl** (Kubernetes CLI)
+
+### Architecture
+The setup creates a 4-node cluster with:
+- **Node A (application)**: Runs the Student API
+- **Node B (database)**: Runs PostgreSQL
+- **Node C (dependent_services)**: Runs Vault and External Secrets operator
+- **Control plane**: Tainted to run only system pods
+
+### One-Click Deployment
+Run the setup script to deploy everything:
+```bash
+cd k8s
+./setup.sh
+```
+
+This script will:
+1. Start a 4-node Minikube cluster
+2. Apply node labels and taints
+3. Install External Secrets CRDs
+4. Deploy Vault and External Secrets operator
+5. Seed Vault with database credentials
+6. Deploy PostgreSQL and Student API
+7. Run database migrations
+8. Port-forward the API to localhost:8080
+
+### Verify Deployment
+```bash
+curl http://localhost:8080/healthcheck
+```
+
+### Clean Up
+```bash
+minikube delete
+```
+
 ## Project Structure
 - `cmd/server/`: Entry point for the application.
 - `internal/`: Private application and library code.
 - `pkg/`: Public library code.
 - `migrations/`: SQL migration files.
+- `k8s/`: Kubernetes manifests for deployment.
