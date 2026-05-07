@@ -1,3 +1,9 @@
+repositories:
+  - name: hashicorp
+    url: https://helm.releases.hashicorp.com
+  - name: external-secrets
+    url: https://charts.external-secrets.io
+
 releases:
   - name: vault
     namespace: vault
