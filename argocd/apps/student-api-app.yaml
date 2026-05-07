@@ -12,7 +12,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/steamban/one2n-sre-bootcamp.git
-    targetRevision: feat/argocd
+    targetRevision: HEAD
     path: helm-setup/student-api
     helm:
       valueFiles:
