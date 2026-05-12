@@ -32,8 +32,26 @@ spec:
                 index:
                   prefix: index_
                   period: 24h
+          rulerConfig:
+            alertmanager_url: http://prometheus-kube-prometheus-alertmanager.observability.svc:9093
+            storage:
+              type: local
+              local:
+                directory: /rules
+            rule_path: /tmp/scratch
+            ring:
+              kvstore:
+                store: inmemory
         singleBinary:
           replicas: 1
+          extraVolumes:
+            - name: rules
+              configMap:
+                name: loki-alert-rules
+          extraVolumeMounts:
+            - name: rules
+              mountPath: /rules/fake/rules.yaml
+              subPath: rules.yaml
           persistence:
             enabled: true
             size: 10Gi

@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: observability-alerts
+  namespace: observability
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: bootstrap
+      rules:
+        - alert: HighCPUUsage
+          expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+          annotations:
+            summary: "High CPU usage on {{ $labels.instance }}"
+
+        - alert: HighDiskUsage
+          expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) > 85
+          annotations:
+            summary: "High Disk usage on {{ $labels.instance }}"
+
+        - alert: HighLatency
+          expr: probe_duration_seconds > 2
+          annotations:
+            summary: "High latency for {{ $labels.instance }}"
+
+        - alert: ServiceRestarted
+          expr: changes(kube_pod_container_status_restarts_total{namespace=~"observability|vault|argocd|student-api"}[5m]) > 0
+          annotations:
+            summary: "Service restarted: {{ $labels.container }}"

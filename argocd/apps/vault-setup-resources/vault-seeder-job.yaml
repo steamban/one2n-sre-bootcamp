@@ -29,6 +29,7 @@ spec:
               echo "Waiting for Vault to be ready..."
               until vault status 2>/dev/null | grep -q "Initialized.*true"; do sleep 2; done
               vault kv put secret/student-api/db username='postgres' password='supersecretpassword' dbname='student_db'
+              vault kv put secret/observability/slack webhook_url='http://REPLACE_WITH_ACTUAL_WEBHOOK'
               echo "Vault seeded successfully!"
           resources:
             limits:
