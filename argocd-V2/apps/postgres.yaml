@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: postgresql
+    targetRevision: 18.6.0
+    helm:
+      values: |
+        auth:
+          database: student_db
+          username: studentapp
+          password: complicated
+        primary:
+          nodeSelector:
+            type: database
+          persistence:
+            enabled: true
+            size: 5Gi
+            storageClass: local-path
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: student-api
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

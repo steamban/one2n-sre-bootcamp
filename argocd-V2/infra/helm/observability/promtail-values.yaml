@@ -1,0 +1,46 @@
+daemonset:
+  enabled: true
+
+serviceAccount:
+  create: true
+
+rbac:
+  create: true
+  pspEnabled: false
+
+volumes:
+  - name: pods-logs
+    hostPath:
+      path: /var/log/pods
+
+volumeMounts:
+  - name: pods-logs
+    mountPath: /var/log/pods
+    readOnly: true
+
+config:
+  clients:
+    - url: http://loki.observability.svc.cluster.local:3100/loki/api/v1/push
+  snippets:
+    extraRelabelConfigs:
+      - action: keep
+        source_labels: [__meta_kubernetes_namespace]
+        regex: student-api
+
+readinessProbe:
+  httpGet: null
+  tcpSocket:
+    port: 3101
+
+containerSecurityContext:
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+    add:
+      - DAC_READ_SEARCH
+
+tolerations:
+  - effect: NoSchedule
+    operator: Exists

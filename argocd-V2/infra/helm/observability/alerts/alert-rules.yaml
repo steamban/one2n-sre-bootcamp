@@ -1,0 +1,54 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: student-api-alerts
+  namespace: observability
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: node-alerts
+      rules:
+        - alert: HighCPUUsage
+          expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage on {{ $labels.instance }}"
+
+        - alert: HighDiskUsage
+          expr: (1 - node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"}) * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High disk usage on {{ $labels.instance }}"
+
+    - name: application-alerts
+      rules:
+        - alert: HighErrorRate
+          expr: sum(rate(http_server_requests_seconds_count{status=~"5.."}[10m])) > 0.1
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High error rate in student-api"
+
+        - alert: HighLatency
+          expr: probe_duration_seconds > 2
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High latency for {{ $labels.instance }}"
+
+    - name: service-restart-alerts
+      rules:
+        - alert: ServiceRestarted
+          expr: changes(kube_pod_container_status_restarts_total{namespace=~"observability|vault|argocd|student-api"}[5m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Service restarted: {{ $labels.container }} in {{ $labels.namespace }}"

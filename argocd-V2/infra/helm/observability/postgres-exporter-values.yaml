@@ -1,0 +1,14 @@
+config:
+  datasource:
+    host: student-api-postgresql.student-api.svc.cluster.local
+    port: "5432"
+    user: studentapp
+    password: complicated
+    database: student_db
+    sslmode: disable
+
+serviceMonitor:
+  enabled: true
+  namespace: observability
+  labels:
+    release: prometheus

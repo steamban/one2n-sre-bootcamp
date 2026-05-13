@@ -1,0 +1,85 @@
+nodeSelector:
+  type: dependent_services
+
+prometheus:
+  prometheusSpec:
+    nodeSelector:
+      type: dependent_services
+    additionalScrapeConfigs:
+      - job_name: blackbox-http
+        metrics_path: /probe
+        params:
+          module: [http_2xx]
+        static_configs:
+          - targets:
+              - http://student-api.student-api.svc:8080/healthcheck
+            labels:
+              service: student-api
+              group: endpoints
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter-prometheus-blackbox-exporter.observability.svc:9115
+
+grafana:
+  enabled: true
+  nodeSelector:
+    type: dependent_services
+  service:
+    type: NodePort
+    nodePort: 30082
+  adminPassword: admin
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki.observability.svc.cluster.local:3100
+      access: proxy
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      node-exporter:
+        gnetId: 1860
+        revision: 37
+        datasource: Prometheus
+      kubernetes:
+        gnetId: 13332
+        revision: 1
+        datasource: Prometheus
+      postgres:
+        gnetId: 9628
+        revision: 7
+        datasource: Prometheus
+      blackbox:
+        gnetId: 7587
+        revision: 3
+        datasource: Prometheus
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    nodeSelector:
+      type: dependent_services
+
+kubeStateMetrics:
+  enabled: true
+  nodeSelector:
+    type: dependent_services
+
+prometheus-node-exporter:
+  enabled: true
+  nodeSelector:
+    type: dependent_services
