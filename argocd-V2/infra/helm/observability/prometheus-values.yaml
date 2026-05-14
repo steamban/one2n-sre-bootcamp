@@ -67,6 +67,10 @@ grafana:
         gnetId: 7587
         revision: 3
         datasource: Prometheus
+      application-logs:
+        gnetId: 13639
+        revision: 1
+        datasource: Loki
 
 alertmanager:
   enabled: true
