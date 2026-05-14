@@ -20,7 +20,7 @@ var (
 
 	httpRequestDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "http_server_requests_seconds_bucket",
+			Name:    "http_request_duration_seconds",
 			Help:    "HTTP request duration in seconds by method and path",
 			Buckets: prometheus.DefBuckets,
 		},

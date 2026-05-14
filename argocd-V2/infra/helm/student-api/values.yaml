@@ -1,7 +1,7 @@
 image:
-  repository: arvind12n/student-api
-  tag: v1.1.0
-  pullPolicy: IfNotPresent
+  repository: arvind12n/student-api-test
+  tag: test-metrics-v3
+  pullPolicy: Always
 
 config:
   PORT: "8080"

@@ -11,6 +11,7 @@ APP_NAMESPACE="${APP_NAMESPACE:-student-api}"
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 OBSERVABILITY_NAMESPACE="${OBSERVABILITY_NAMESPACE:-observability}"
 SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
+SLACK_CHANNEL="${SLACK_CHANNEL:-#sre-bootcamp-alerts-test}"
 DB_USER="${DB_USER:-studentapp}"
 DB_PASSWORD="${DB_PASSWORD:-complicated}"
 VAULT_TOKEN="${VAULT_TOKEN:-root}"
@@ -173,21 +174,17 @@ alertmanager:
     receivers:
       - name: slack-notifications
         slack_configs:
-          - channel: "#alerts"
-            title: '{{ template "slack.title" . }}'
-            text: '{{ template "slack.text" . }}'
-    templates:
-      - /etc/alertmanager/config/*.tmpl
-  templateFiles:
-    default.tmpl: |
-      {{ define "slack.title" }}[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}{{ end }}
-      {{ define "slack.text" }}
-      *Alert:* {{ .CommonLabels.alertname }}
-      *Severity:* {{ .CommonLabels.severity }}
-      *Description:* {{ .CommonAnnotations.description }}
-      *Summary:* {{ .CommonAnnotations.summary }}
-      *Instance:* {{ .CommonLabels.instance }}
-      {{ end }}
+          - channel: "$SLACK_CHANNEL"
+            title: '{{ range .Alerts }}[{{ .Status | toUpper }}] {{ .Labels.alertname }}{{ end }}'
+            text: '{{ range .Alerts }}━━━━━━━━━━━━━━━━━━━━
+*Alert:* {{ .Labels.alertname }}
+*Severity:* {{ .Labels.severity }}{{ if .Labels.namespace }}
+*Namespace:* {{ .Labels.namespace }}{{ end }}{{ if .Labels.pod }}
+*Pod:* {{ .Labels.pod }}{{ end }}{{ if .Labels.instance }}
+*Instance:* {{ .Labels.instance }}{{ end }}{{ if .Annotations.summary }}
+*Summary:* {{ .Annotations.summary }}{{ end }}{{ if .Annotations.description }}
+*Description:* {{ .Annotations.description }}{{ end }}
+{{ end }}'
 EOF
   fi
 
