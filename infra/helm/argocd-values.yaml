@@ -1,0 +1,6 @@
+nodeSelector:
+  type: dependent_services
+
+configs:
+  params:
+    server.insecure: true
