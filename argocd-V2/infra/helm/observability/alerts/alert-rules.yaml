@@ -16,6 +16,7 @@ spec:
             severity: warning
           annotations:
             summary: "High CPU usage on {{ $labels.instance }}"
+            description: "CPU usage is above 80% for more than 5 minutes. Current value: {{ $value | printf \"%.1f\" }}%"
 
         - alert: HighDiskUsage
           expr: (1 - node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"}) * 100 > 80
@@ -24,6 +25,7 @@ spec:
             severity: warning
           annotations:
             summary: "High disk usage on {{ $labels.instance }}"
+            description: "Disk usage is above 80% on mountpoint {{ $labels.mountpoint }}. Current value: {{ $value | printf \"%.1f\" }}%"
 
     - name: application-alerts
       rules:
@@ -34,21 +36,80 @@ spec:
             severity: critical
           annotations:
             summary: "High error rate in student-api"
+            description: "5xx error rate is {{ $value | printf \"%.2f\" }} req/s in the last 10 minutes, exceeding threshold of 0.1 req/s"
 
-        - alert: HighLatency
-          expr: probe_duration_seconds > 2
-          for: 2m
+        - alert: HighRequestCount
+          expr: sum(rate(http_server_requests_seconds_count[5m])) > 100
+          for: 5m
           labels:
             severity: warning
           annotations:
-            summary: "High latency for {{ $labels.instance }}"
+            summary: "High request count on student-api"
+            description: "Request rate is {{ $value | printf \"%.0f\" }} req/s, exceeding threshold of 100 req/s"
+
+        - alert: HighP90Latency
+          expr: histogram_quantile(0.90, sum(rate(http_server_requests_seconds_bucket[5m])) by (le)) > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High p90 latency on student-api"
+            description: "p90 latency is {{ $value | printf \"%.2f\" }}s, exceeding threshold of 1s"
+
+        - alert: HighP95Latency
+          expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le)) > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High p95 latency on student-api"
+            description: "p95 latency is {{ $value | printf \"%.2f\" }}s, exceeding threshold of 2s"
+
+        - alert: HighP99Latency
+          expr: histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket[5m])) by (le)) > 5
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High p99 latency on student-api"
+            description: "p99 latency is {{ $value | printf \"%.2f\" }}s, exceeding threshold of 5s"
 
     - name: service-restart-alerts
       rules:
-        - alert: ServiceRestarted
-          expr: changes(kube_pod_container_status_restarts_total{namespace=~"observability|vault|argocd|student-api"}[5m]) > 0
+        - alert: PostgresRestarted
+          expr: changes(kube_pod_container_status_restarts_total{namespace="student-api", container=~".*postgres.*"}[10m]) > 0
           for: 1m
           labels:
             severity: critical
           annotations:
-            summary: "Service restarted: {{ $labels.container }} in {{ $labels.namespace }}"
+            summary: "PostgreSQL pod restarted"
+            description: "PostgreSQL container {{ $labels.container }} in pod {{ $labels.pod }} has restarted {{ $labels.instance }}"
+
+        - alert: VaultRestarted
+          expr: changes(kube_pod_container_status_restarts_total{namespace="vault", container="vault"}[10m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Vault pod restarted"
+            description: "Vault container in pod {{ $labels.pod }} has restarted"
+
+        - alert: ArgoCDRestarted
+          expr: changes(kube_pod_container_status_restarts_total{namespace="argocd", container="argocd-server"}[10m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ArgoCD server pod restarted"
+            description: "ArgoCD server container in pod {{ $labels.pod }} has restarted"
+
+    - name: blackbox-alerts
+      rules:
+        - alert: EndpointDown
+          expr: probe_success{job="blackbox-http"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "student-api endpoint is down"
+            description: "Blackbox probe to student-api healthcheck endpoint has failed for more than 1 minute"
