@@ -10,6 +10,7 @@ EXTERNAL_SECRETS_NAMESPACE="${EXTERNAL_SECRETS_NAMESPACE:-external-secrets}"
 APP_NAMESPACE="${APP_NAMESPACE:-student-api}"
 ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 OBSERVABILITY_NAMESPACE="${OBSERVABILITY_NAMESPACE:-observability}"
+SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
 DB_USER="${DB_USER:-studentapp}"
 DB_PASSWORD="${DB_PASSWORD:-complicated}"
 VAULT_TOKEN="${VAULT_TOKEN:-root}"
@@ -146,11 +147,60 @@ deploy_observability() {
   ensure_namespaces
   ensure_helm_repos
 
+  local prometheus_values="$ROOT_DIR/infra/helm/observability/prometheus-values.yaml"
+  local slack_values=""
+
+  if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+    log "Configuring Alertmanager Slack notifications"
+    slack_values="$(mktemp)"
+    cat > "$slack_values" <<EOF
+alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m
+      slack_api_url: "$SLACK_WEBHOOK_URL"
+    route:
+      group_by: ["namespace", "severity"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: slack-notifications
+      routes:
+        - receiver: slack-notifications
+          repeat_interval: 4h
+          matchers:
+            - severity =~ "warning|critical"
+    receivers:
+      - name: slack-notifications
+        slack_configs:
+          - channel: "#alerts"
+            title: '{{ template "slack.title" . }}'
+            text: '{{ template "slack.text" . }}'
+    templates:
+      - /etc/alertmanager/config/*.tmpl
+  templateFiles:
+    default.tmpl: |
+      {{ define "slack.title" }}[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}{{ end }}
+      {{ define "slack.text" }}
+      *Alert:* {{ .CommonLabels.alertname }}
+      *Severity:* {{ .CommonLabels.severity }}
+      *Description:* {{ .CommonAnnotations.description }}
+      *Summary:* {{ .CommonAnnotations.summary }}
+      *Instance:* {{ .CommonLabels.instance }}
+      {{ end }}
+EOF
+  fi
+
   log "Deploying kube-prometheus-stack"
   helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
     --namespace "$OBSERVABILITY_NAMESPACE" \
-    -f "$ROOT_DIR/infra/helm/observability/prometheus-values.yaml" \
+    -f "$prometheus_values" \
+    ${slack_values:+-f "$slack_values"} \
     --wait --timeout=10m
+
+  if [[ -n "$slack_values" ]]; then
+    rm -f "$slack_values"
+  fi
 
   log "Deploying Loki"
   helm upgrade --install loki grafana/loki \
