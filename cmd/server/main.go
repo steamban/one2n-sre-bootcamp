@@ -10,6 +10,7 @@ import (
 	"github.com/one2n-sre-bootcamp/student-api/internal/db"
 	"github.com/one2n-sre-bootcamp/student-api/internal/repository"
 	"github.com/one2n-sre-bootcamp/student-api/pkg/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -30,6 +31,9 @@ func main() {
 
 	// Initialize Gin router
 	r := router.SetupRouter(studentHandler)
+
+	// Metrics endpoint
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Healthcheck endpoint
 	r.GET("/healthcheck", func(c *gin.Context) {
