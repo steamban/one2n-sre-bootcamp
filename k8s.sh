@@ -12,6 +12,9 @@ ARGOCD_NAMESPACE="${ARGOCD_NAMESPACE:-argocd}"
 DB_USER="${DB_USER:-studentapp}"
 DB_PASSWORD="${DB_PASSWORD:-complicated}"
 VAULT_TOKEN="${VAULT_TOKEN:-root}"
+OBSERVABILITY_NAMESPACE="${OBSERVABILITY_NAMESPACE:-observability}"
+SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
+SLACK_CHANNEL="${SLACK_CHANNEL:-#sre-bootcamp-alerts-test}"
 
 log() {
   echo "==> $1"
@@ -69,7 +72,7 @@ ensure_node_labels() {
 }
 
 ensure_namespaces() {
-  for ns in "$VAULT_NAMESPACE" "$EXTERNAL_SECRETS_NAMESPACE" "$ARGOCD_NAMESPACE" "$APP_NAMESPACE"; do
+  for ns in "$VAULT_NAMESPACE" "$EXTERNAL_SECRETS_NAMESPACE" "$ARGOCD_NAMESPACE" "$APP_NAMESPACE" "$OBSERVABILITY_NAMESPACE"; do
     kubectl get ns "$ns" &>/dev/null || kubectl create ns "$ns"
   done
 }
@@ -88,6 +91,8 @@ ensure_helm_repos() {
   ensure_helm_repo hashicorp https://helm.releases.hashicorp.com
   ensure_helm_repo external-secrets https://charts.external-secrets.io
   ensure_helm_repo argo https://argoproj.github.io/argo-helm
+  ensure_helm_repo prometheus-community https://prometheus-community.github.io/helm-charts
+  ensure_helm_repo grafana https://grafana.github.io/helm-charts
   log "Updating Helm repos"
   helm repo update
 }
@@ -146,6 +151,91 @@ deploy_gitops() {
   kubectl apply -f "$ROOT_DIR/apps/student-api.yaml"
 }
 
+deploy_observability() {
+  ensure_namespaces
+  ensure_helm_repos
+
+  local prometheus_values="$ROOT_DIR/infra/helm/observability/prometheus-values.yaml"
+  local slack_values=""
+
+  if [[ -n "$SLACK_WEBHOOK_URL" ]]; then
+    log "Configuring Alertmanager Slack notifications"
+    slack_values="$(mktemp)"
+    cat > "$slack_values" <<EOF
+alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m
+      slack_api_url: "$SLACK_WEBHOOK_URL"
+    route:
+      group_by: ["namespace", "severity"]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: slack-notifications
+      routes:
+        - receiver: slack-notifications
+          repeat_interval: 4h
+          matchers:
+            - severity =~ "warning|critical"
+    receivers:
+      - name: slack-notifications
+        slack_configs:
+          - channel: "$SLACK_CHANNEL"
+            title: '{{ range .Alerts }}[{{ .Status | toUpper }}] {{ .Labels.alertname }}{{ end }}'
+            text: '{{ range .Alerts }}━━━━━━━━━━━━━━━━━━━━
+*Alert:* {{ .Labels.alertname }}
+*Severity:* {{ .Labels.severity }}{{ if .Labels.namespace }}
+*Namespace:* {{ .Labels.namespace }}{{ end }}{{ if .Labels.pod }}
+*Pod:* {{ .Labels.pod }}{{ end }}{{ if .Labels.instance }}
+*Instance:* {{ .Labels.instance }}{{ end }}{{ if .Annotations.summary }}
+*Summary:* {{ .Annotations.summary }}{{ end }}{{ if .Annotations.description }}
+*Description:* {{ .Annotations.description }}{{ end }}
+{{ end }}'
+EOF
+  fi
+
+  log "Deploying kube-prometheus-stack"
+  helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+    --namespace "$OBSERVABILITY_NAMESPACE" \
+    -f "$prometheus_values" \
+    ${slack_values:+-f "$slack_values"} \
+    --wait --timeout=10m
+
+  if [[ -n "$slack_values" ]]; then
+    rm -f "$slack_values"
+  fi
+
+  log "Deploying Loki"
+  helm upgrade --install loki grafana/loki \
+    --namespace "$OBSERVABILITY_NAMESPACE" \
+    --version 7.0.0 \
+    -f "$ROOT_DIR/infra/helm/observability/loki-values.yaml" \
+    --wait --timeout=5m
+
+  log "Deploying Promtail"
+  helm upgrade --install promtail grafana/promtail \
+    --namespace "$OBSERVABILITY_NAMESPACE" \
+    --version 6.17.1 \
+    -f "$ROOT_DIR/infra/helm/observability/promtail-values.yaml" \
+    --wait --timeout=5m
+
+  log "Deploying postgres-exporter"
+  helm upgrade --install postgres-exporter prometheus-community/prometheus-postgres-exporter \
+    --namespace "$OBSERVABILITY_NAMESPACE" \
+    -f "$ROOT_DIR/infra/helm/observability/postgres-exporter-values.yaml" \
+    --wait --timeout=5m
+
+  log "Deploying blackbox-exporter"
+  helm upgrade --install blackbox-exporter prometheus-community/prometheus-blackbox-exporter \
+    --namespace "$OBSERVABILITY_NAMESPACE" \
+    -f "$ROOT_DIR/infra/helm/observability/blackbox-exporter-values.yaml" \
+    --wait --timeout=5m
+
+  log "Applying alert rules"
+  kubectl apply -f "$ROOT_DIR/infra/helm/observability/alerts/alert-rules.yaml"
+}
+
 deploy_cluster() {
   ensure_minikube_running
   ensure_node_labels
@@ -155,20 +245,25 @@ deploy_all() {
   deploy_cluster
   deploy_core
   deploy_gitops
-  log "Deployment complete. Run the following to access ArgoCD:"
-  echo "  kubectl port-forward svc/argocd-server -n argocd 8080:443"
+  deploy_observability
+  log "Deployment complete. Run the following to access services:"
+  echo "  ArgoCD:   kubectl port-forward svc/argocd-server -n argocd 8080:443"
+  echo "  Grafana:  kubectl port-forward svc/prometheus-grafana -n observability 8080:80"
+  echo "  API:      kubectl port-forward svc/student-api -n student-api 8080:8080"
+  echo ""
   echo "  ArgoCD password: kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 -d"
 }
 
 main() {
   local command="${1:-up}"
   case "$command" in
-    up)         deploy_all ;;
-    cluster)    deploy_cluster ;;
-    core)       deploy_core ;;
-    gitops)     deploy_gitops ;;
+    up)             deploy_all ;;
+    cluster)        deploy_cluster ;;
+    core)           deploy_core ;;
+    gitops)         deploy_gitops ;;
+    observability)  deploy_observability ;;
     *)
-      echo "Usage: $0 {up|cluster|core|gitops}" >&2
+      echo "Usage: $0 {up|cluster|core|gitops|observability}" >&2
       exit 1
       ;;
   esac
