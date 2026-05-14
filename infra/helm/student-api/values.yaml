@@ -1,0 +1,22 @@
+image:
+  repository: arvind12n/student-api-test
+  tag: test-metrics-v3
+  pullPolicy: Always
+
+config:
+  PORT: "8080"
+  DB_HOST: "postgres-postgresql"
+  DB_PORT: "5432"
+  DB_SSLMODE: "disable"
+  DB_NAME: "student_db"
+
+nodeSelector:
+  type: application
+
+resources: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+vaultToken: "root"
