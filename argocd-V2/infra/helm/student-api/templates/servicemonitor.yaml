@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "student-api.fullname" . }}
+  labels:
+    {{- include "student-api.labels" . | nindent 4 }}
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      {{- include "student-api.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      relabelings:
+        - targetLabel: app
+          replacement: student-api
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
