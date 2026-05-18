@@ -278,6 +278,58 @@ To uninstall all resources:
 helmfile destroy
 ```
 
+## GitOps with ArgoCD (Minikube)
+
+This project supports GitOps-based deployment using ArgoCD. This approach automates the deployment of the Student API and its infrastructure (PostgreSQL, Vault, External Secrets).
+
+### Prerequisites
+- **Minikube**
+- **kubectl**
+- **Helm 3+**
+
+### One-Click Deployment
+A root-level script `k8s.sh` is provided to automate the entire setup:
+
+```bash
+chmod +x k8s.sh
+./k8s.sh up
+```
+
+This script performs the following:
+1. **Cluster Setup**: Starts a 4-node Minikube cluster and labels nodes (`application`, `database`, `dependent_services`) for workload isolation.
+2. **Core Infrastructure**: Deploys **HashiCorp Vault** and **External Secrets Operator** using Helm.
+3. **Vault Seeding**: Automatically seeds Vault with initial database credentials.
+4. **ArgoCD**: Deploys ArgoCD into the `argocd` namespace.
+5. **Applications**: Applies ArgoCD Application manifests from the `apps/` directory, which tells ArgoCD to manage the `student-api` and `postgres` deployments.
+
+### Accessing the ArgoCD UI
+To monitor your applications:
+1. **Port-forward the ArgoCD server**:
+   ```bash
+   kubectl port-forward svc/argocd-server -n argocd 8080:443
+   ```
+2. **Get the admin password**:
+   ```bash
+   kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 -d
+   ```
+3. Login at [https://localhost:8080](https://localhost:8080) with username `admin`.
+
+### Verifying the Application
+Once ArgoCD shows the applications as "Synced" and "Healthy":
+1. **Port-forward the Student API**:
+   ```bash
+   kubectl port-forward svc/student-api -n student-api 8081:8080
+   ```
+2. **Test the healthcheck**:
+   ```bash
+   curl http://localhost:8081/healthcheck
+   ```
+
+### Clean Up
+To remove the cluster and all resources:
+```bash
+minikube delete --all
+```
 
 ## Project Structure
 - `cmd/server/`: Entry point for the application.
@@ -286,3 +338,4 @@ helmfile destroy
 - `migrations/`: SQL migration files.
 - `k8s/`: Kubernetes setup files
 - `helm-setup`: Helm setup files
+- `infra`: ArgoCD setup files
