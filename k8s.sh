@@ -56,8 +56,8 @@ ensure_node_labels() {
 
   local workers=()
   while IFS= read -r node; do
-    workers+=("$node")
-  done < <(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
+    [[ -n "$node" ]] && workers+=("$node")
+  done < <(kubectl get nodes -l '!node-role.kubernetes.io/control-plane' -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
 
   if [[ ${#workers[@]} -ge 3 ]]; then
     label_node "${workers[0]}" application
