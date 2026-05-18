@@ -1,5 +1,5 @@
 image:
-  repository: arvind12n/student-api-test
+  repository: arvind12n/student-api
   tag: latest
   pullPolicy: Always
 
